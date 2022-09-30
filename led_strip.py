@@ -47,12 +47,3 @@ class LEDStrip:
 
     def get_led(self, pos: int) -> Pixel:
         return self.leds[pos]
-
-
-if __name__ == "__main__":
-    strip = LEDStrip(
-        leds=[Pixel(255, 0, 0), Pixel(0, 0, 255), Pixel(255, 255, 255)],
-        spi_id=0,
-        sck=Pin(2, mode=Pin.OUT),
-        mosi=Pin(3, mode=Pin.OUT),
-    )
