@@ -1,5 +1,5 @@
 from machine import Pin, SPI
-from pixel import Pixel, to_bytes
+from pixel import Pixel
 
 
 class LEDStrip:
@@ -34,7 +34,7 @@ class LEDStrip:
 
     def update_leds(self) -> None:
         for led in self._leds:
-            self._spi_device.write(to_bytes(led))
+            self._spi_device.write(led.to_bytes())
 
     def set_led(self, pos: int, pixel: Pixel) -> None:
         self._leds[pos] = pixel
