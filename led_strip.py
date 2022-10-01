@@ -14,9 +14,7 @@ class LEDStrip:
     ) -> None:
         if isinstance(leds, int):
             if leds < 0:
-                raise ValueError(
-                    f"'leds' parameter must be larger than 0 (actual {leds})"
-                )
+                raise ValueError(f"'leds' must be >= 0 (actual {leds})")
             self._leds = [Pixel(0, 0, 0) for _ in range(leds)]
         else:
             self._leds = leds
