@@ -1,49 +1,61 @@
 from machine import Pin, SPI
-
-
-class Pixel:
-    def __init__(self, red: int, green: int, blue: int, brightness: float = 1) -> None:
-        self.red = red
-        self.green = green
-        self.blue = blue
-        self.brightness = brightness
-
-    @property
-    def bytes(self) -> bytes:
-        red = int(self.red * self.brightness)
-        green = int(self.green * self.brightness)
-        blue = int(self.blue * self.brightness)
-        int_value = (red << 16) + (green << 8) + blue
-        return int_value.to_bytes(3, "big")
+from pixel import Pixel, to_bytes
 
 
 class LEDStrip:
-    def __init__(self, leds: list[Pixel], spi_id: int, sck: Pin, mosi: Pin, baudrate: int = 4000) -> None:
-        self.leds = leds
-        self.spi_device = SPI(
-            spi_id,
-            sck=sck,
-            mosi=mosi,
-            baudrate=baudrate,
-            firstbit=SPI.MSB,
-            bits=24,
+    def __init__(
+        self,
+        leds: int | list[Pixel],
+        auto_update: bool = True,
+        spi_id: int = 0,
+        sck: Pin = Pin(2, mode=Pin.OUT),
+        mosi: Pin = Pin(3, mode=Pin.OUT),
+        baudrate: int = 10000,
+    ) -> None:
+        if isinstance(leds, int):
+            if leds < 0:
+                raise ValueError(
+                    f"'leds' parameter must be larger than 0 (actual {leds})"
+                )
+            self._leds = [Pixel(0, 0, 0) for _ in range(leds)]
+        else:
+            self._leds = leds
+
+        self._auto_update = auto_update
+
+        self._spi_device = SPI(
+            spi_id, sck=sck, mosi=mosi, baudrate=baudrate, firstbit=SPI.MSB, bits=24
         )
-        self._update_leds()
+
+        if self._auto_update:
+            self.update_leds()
 
     @property
-    def bytes(self) -> bytes:
-        result = bytearray()
-        for led in self.leds:
-            result += led.bytes
-        return bytes(result)
+    def length(self) -> int:
+        return len(self._leds)
 
-    def _update_leds(self) -> None:
-        for led in self.leds:
-            self.spi_device.write(led.bytes)
+    def update_leds(self) -> None:
+        for led in self._leds:
+            self._spi_device.write(to_bytes(led))
 
     def set_led(self, pos: int, pixel: Pixel) -> None:
-        self.leds[pos] = pixel
-        self._update_leds()
+        self._leds[pos] = pixel
+        if self._auto_update:
+            self.update_leds()
 
     def get_led(self, pos: int) -> Pixel:
-        return self.leds[pos]
+        return self._leds[pos]
+
+    def turn_off(self) -> None:
+        self._leds = [Pixel(0, 0, 0) for _ in range(len(self))]
+        if self._auto_update:
+            self.update_leds()
+
+    def __len__(self) -> int:
+        return self.length
+
+    def __getitem__(self, key: int) -> Pixel:
+        return self.get_led(key)
+
+    def __setitem__(self, key: int, value: Pixel) -> None:
+        self.set_led(key, value)
