@@ -1,4 +1,5 @@
 from machine import Pin, SPI
+from time import sleep
 from pixel import Pixel
 
 
@@ -28,13 +29,23 @@ class LEDStrip:
         if self._auto_update:
             self.update_leds()
 
+    @staticmethod
+    def from_bytes(data: bytes, **kwargs) -> "LEDStrip":
+        if len(data) % 3 != 0:
+            raise ValueError(
+                f"The number of bytes must be a multiple of 3 (actual: {len(data)})."
+            )
+        leds = [Pixel.from_bytes(data[i : i + 3]) for i in range(0, len(data), 3)]
+        return LEDStrip(leds=leds, **kwargs)
+
     @property
     def length(self) -> int:
         return len(self._leds)
 
-    def update_leds(self) -> None:
+    def update_leds(self, delay_after_update: float = 0.005) -> None:
         for led in self._leds:
             self._spi_device.write(led.to_bytes())
+        sleep(delay_after_update)
 
     def set_led(self, pos: int, pixel: Pixel) -> None:
         self._leds[pos] = pixel
